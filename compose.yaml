@@ -1,0 +1,12 @@
+services:
+  web-ui:
+    build: web-interface/
+    ports:
+      - 80:5173
+    hostname: web
+
+  backend:
+    build: backend/
+    ports:
+      - 8000:8000
+    hostname: backend

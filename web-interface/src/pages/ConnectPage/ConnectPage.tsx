@@ -24,7 +24,7 @@ export default function ConnectPage() {
         });
 
         if (response === 200) {
-            navigate('/test');
+            navigate('/database-inspector');
         }
     }
 
