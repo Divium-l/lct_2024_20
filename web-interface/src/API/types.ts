@@ -1,10 +1,10 @@
 export type DatabaseAuthData = {
-    database: "postgresql";
+    databaseType: "postgresql";
     url: string;
     port: string;
     user: string;
     password: string;
-    copyDatabase: boolean;
+    copy: boolean;
 }
 
 export interface SqlColumn {

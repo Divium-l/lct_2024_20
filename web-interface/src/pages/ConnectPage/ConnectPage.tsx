@@ -15,12 +15,12 @@ export default function ConnectPage() {
         const copy = formData.get('copy') ? true : false;
 
         const response = await connectToDatabase({
-            database: "postgresql",
+            databaseType: "postgresql",
             url: formData.get('url')?.toString() || '',
             port: formData.get('port')?.toString() || '',
             user: formData.get('user')?.toString() || '',
             password: formData.get('password')?.toString() || '',
-            copyDatabase: copy,
+            copy: copy,
         });
 
         if (response === 200) {
