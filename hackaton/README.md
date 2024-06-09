@@ -79,3 +79,8 @@ output data example
 	}
 }
 ```
+
+# How to run
+```bash
+python .\manage.py runserver 
+```
