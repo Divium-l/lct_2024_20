@@ -20,7 +20,7 @@ def connect_to_db(request):
             password = data.get('password')
             copy = data.get('copy')
 
-            if db_type == 'postgreSQL':
+            if db_type != None and db_type.lower() == 'postgreSQL'.lower():
                 try:
                     connection = psycopg2.connect(
                         host=url,
