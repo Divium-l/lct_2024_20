@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from dbconnect.models import DatabaseConnection
 
-
+saved_data = {}
 @csrf_exempt
 def connect_to_db(request):
     if request.method == 'POST':
@@ -97,7 +97,7 @@ def get_columns(request):
             user = last_connection.user
             password = last_connection.password
 
-            if db_type == 'postgreSQL':
+            if db_type.lower() == 'postgreSQL'.lower():
                 try:
                     connection = psycopg2.connect(
                         host=url,
@@ -115,7 +115,7 @@ def get_columns(request):
                     """)
                     tables = cursor.fetchall()
                     print('tables', tables)
-                    columns_info = {}
+                    columns_info = []
 
                     for table in tables:
                         table_name = table[0]
@@ -125,13 +125,18 @@ def get_columns(request):
                             WHERE table_name = '{table_name}'
                         """)
                         columns = cursor.fetchall()
-                        columns_info[table_name] = {column[0]: False for column in columns}
-
-                        global saved_data
-                        saved_data = columns_info
-
+                        columns_info.append({
+                            "tableName": table_name,
+                            "columns": [{
+                                "name": column[0],
+                                "mask": False
+                            } for column in columns
+                            ]
+                        })
                     connection.close()
-                    return JsonResponse(columns_info, status=200)
+                    global saved_data
+                    saved_data = {"tables": columns_info}
+                    return JsonResponse(saved_data, status=200, safe=False)
 
                 except Exception as e:
                     return JsonResponse({'message': str(e)}, status=400)
@@ -145,16 +150,32 @@ def get_columns(request):
 
 @csrf_exempt
 def update_columns(request):
-    if request.method == 'POST':
+    if request.method == 'PUT':
         try:
             data = json.loads(request.body.decode('utf-8'))
             global saved_data
 
-            for table, columns in data.items():
-                if table in saved_data:
-                    saved_data[table].update(columns)
+            for new_table in data.get("tables", []):
+                table_name = new_table["tableName"]
+                new_columns = new_table["columns"]
+
+                existing_table = next((table for table in saved_data.get("tables", []) if table["tableName"] == table_name), None)
+
+                if existing_table:
+                    for new_column in new_columns:
+                        column_name = new_column["name"]
+                        mask = new_column["mask"]
+
+                        existing_column = next((col for col in existing_table["columns"] if col["name"] == column_name), None)
+                        if existing_column:
+                            existing_column["mask"] = mask
+                        else:
+                            existing_table["columns"].append({"name": column_name, "mask": mask})
                 else:
-                    saved_data[table] = columns
+                    saved_data.setdefault("tables", []).append({
+                        "tableName": table_name,
+                        "columns": new_columns
+                    })
 
             return JsonResponse(saved_data, status=200)
         except Exception as e:
