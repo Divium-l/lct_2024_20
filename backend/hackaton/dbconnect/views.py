@@ -1,5 +1,7 @@
 import json
 import random
+from datetime import datetime, date, time
+import time
 import string
 import psycopg2
 import subprocess
@@ -18,6 +20,41 @@ def depersonalize_value(value, semantic=True):
     if semantic:
         return generate_random_string(len(value))
     return generate_random_string(len(value))
+
+def depersonalize_row(row, columns_to_mask, semantic=True):
+    depersonalized_row = {}
+    for col, val in row.items():
+        if col in columns_to_mask:
+            depersonalized_row[col] = depersonalize_value(val, semantic)
+        else:
+            depersonalized_row[col] = val
+    return depersonalized_row
+
+def generate_random_string(length):
+    letters = string.ascii_letters
+    return ''.join(random.choice(letters) for i in range(length))
+
+def generate_random_int(length):
+    return random.randint(10**(length-1), 10**length - 1)
+
+def depersonalize_value(value, semantic=True):
+    if isinstance(value, str):
+        if semantic:
+            return generate_random_string(len(value))
+        else:
+            return generate_random_string(len(value))
+    elif isinstance(value, int):
+        if semantic:
+            return generate_random_int(len(str(value)))
+        else:
+            return generate_random_int(len(str(value)))
+    elif isinstance(value, (datetime, date, time)):
+        if semantic:
+            return value  # добавить генерацию
+        else:
+            return value  # добавить генерацию
+    else:
+        return value
 
 def depersonalize_row(row, columns_to_mask, semantic=True):
     depersonalized_row = {}
@@ -68,6 +105,7 @@ def depersonalize_data(request):
                             row_dict = dict(zip(colnames, row))
                             depersonalized_row = depersonalize_row(row_dict, columns_to_mask, semantic)
                             depersonalized_data.append({table_name: depersonalized_row})
+
                 connection.close()
 
             else:
