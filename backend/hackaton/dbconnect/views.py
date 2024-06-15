@@ -10,16 +10,9 @@ from django.views.decorators.csrf import csrf_exempt
 
 from dbconnect.models import DatabaseConnection
 
+from ml.model_func import Dataset, Model
+
 saved_data = {}
-
-def generate_random_string(length):
-    letters = string.ascii_letters
-    return ''.join(random.choice(letters) for i in range(length))
-
-def depersonalize_value(value, semantic=True):
-    if semantic:
-        return generate_random_string(len(value))
-    return generate_random_string(len(value))
 
 def depersonalize_row(row, columns_to_mask, semantic=True):
     depersonalized_row = {}
@@ -239,11 +232,16 @@ def get_columns(request):
                             WHERE table_name = '{table_name}'
                         """)
                         columns = cursor.fetchall()
+
+                        d = Dataset(last_connection.user, last_connection.password, "hackathon",  last_connection.url, last_connection.port, table_name)
+                        m = Model("model", d)
+
+
                         columns_info.append({
                             "tableName": table_name,
                             "columns": [{
                                 "name": column[0],
-                                "mask": False
+                                "mask": m.get_predictions([column[0]])[column[0]]
                             } for column in columns
                             ]
                         })
