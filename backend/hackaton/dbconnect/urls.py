@@ -7,4 +7,5 @@ urlpatterns = [
     path('scanResult/', views.get_columns, name='scanResult'),
     path('updateScanResult', views.update_columns, name='updateScanResult'),
     path('getSavedColumns/', views.get_saved_columns, name='getSavedColumns'),
+    path('startMasking/', views.depersonalize_data, name='startMasking'),
 ]

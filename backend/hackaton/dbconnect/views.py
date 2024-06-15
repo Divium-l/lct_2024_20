@@ -1,13 +1,117 @@
 import json
+import random
+from datetime import datetime, date, time
+import time
+import string
 import psycopg2
 import subprocess
-import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from dbconnect.models import DatabaseConnection
 
+from ml.model_func import Dataset, Model
+
 saved_data = {}
+
+def depersonalize_row(row, columns_to_mask, semantic=True):
+    depersonalized_row = {}
+    for col, val in row.items():
+        if col in columns_to_mask:
+            depersonalized_row[col] = depersonalize_value(val, semantic)
+        else:
+            depersonalized_row[col] = val
+    return depersonalized_row
+
+def generate_random_string(length):
+    letters = string.ascii_letters
+    return ''.join(random.choice(letters) for i in range(length))
+
+def generate_random_int(length):
+    return random.randint(10**(length-1), 10**length - 1)
+
+def depersonalize_value(value, semantic=True):
+    if isinstance(value, str):
+        if semantic:
+            return generate_random_string(len(value))
+        else:
+            return generate_random_string(len(value))
+    elif isinstance(value, int):
+        if semantic:
+            return generate_random_int(len(str(value)))
+        else:
+            return generate_random_int(len(str(value)))
+    elif isinstance(value, (datetime, date, time)):
+        if semantic:
+            return value  # добавить генерацию
+        else:
+            return value  # добавить генерацию
+    else:
+        return value
+
+def depersonalize_row(row, columns_to_mask, semantic=True):
+    depersonalized_row = {}
+    for col, val in row.items():
+        if col in columns_to_mask:
+            depersonalized_row[col] = depersonalize_value(val, semantic)
+        else:
+            depersonalized_row[col] = val
+    return depersonalized_row
+
+@csrf_exempt
+def depersonalize_data(request):
+    if request.method == 'GET':
+        try:
+            if request.body:
+                data = json.loads(request.body.decode('utf-8'))
+                semantic = data.get("semantic", True)
+            else:
+                semantic = True
+
+            last_connection = DatabaseConnection.objects.latest('id')
+            db_type = last_connection.database_type
+            url = last_connection.url
+            port = last_connection.port
+            user = last_connection.user
+            password = last_connection.password
+
+            depersonalized_data = []
+
+            if db_type != None and db_type.lower() == 'postgreSQL'.lower():
+                connection = psycopg2.connect(
+                    host=url,
+                    port=port,
+                    user=user,
+                    password=password
+                )
+                cursor = connection.cursor()
+
+                for table in saved_data.get("tables", []):
+                    table_name = table["tableName"]
+                    columns_to_mask = [col["name"] for col in table["columns"] if col["mask"]]
+
+                    if columns_to_mask:
+                        cursor.execute(f"SELECT * FROM {table_name};")
+                        rows = cursor.fetchall()
+                        colnames = [desc[0] for desc in cursor.description]
+                        for row in rows:
+                            row_dict = dict(zip(colnames, row))
+                            depersonalized_row = depersonalize_row(row_dict, columns_to_mask, semantic)
+                            depersonalized_data.append({table_name: depersonalized_row})
+
+                connection.close()
+
+            else:
+                return JsonResponse({'message': 'Unsupported database type'}, status=400)
+
+            return JsonResponse({'depersonalized_data': depersonalized_data}, status=200)
+
+        except DatabaseConnection.DoesNotExist:
+            return JsonResponse({'message': 'No connection data found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'message': str(e)}, status=400)
+    return JsonResponse({'message': 'Invalid request method'}, status=405)
+
 @csrf_exempt
 def connect_to_db(request):
     if request.method == 'POST':
@@ -30,21 +134,24 @@ def connect_to_db(request):
                     )
                     connection.close()
                     if copy:
-                        dump_command = f'pg_dump -h {url} -p {port} -U {user} -F c -b -v -f db_backup.dump'
-                        dump_process = subprocess.run(dump_command, shell=True, check=True,
-                                                      env={"PGPASSWORD": password})
+                        backup_file = 'db_backup.dump'
+                        pg_dump_command = [
+                            'pg_dump',
+                            '-h', url,
+                            '-p', port,
+                            '-U', user,
+                            '-F', 'c',
+                            '-b',
+                            '-v',
+                            '-f', backup_file
+                        ]
 
-                        if dump_process.returncode != 0:
-                            return JsonResponse({'message': 'Error during database dump'}, status=400)
 
-                        restore_command = f'pg_restore -h {url} -p {port} -U {user} -d new_database -v db_backup.dump'
-                        restore_process = subprocess.run(restore_command, shell=True, check=True,
-                                                         env={"PGPASSWORD": password})
+                        env = {'PGPASSWORD': password}
+                        result = subprocess.run(pg_dump_command, env=env, capture_output=True, text=True)
 
-                        if restore_process.returncode != 0:
-                            return JsonResponse({'message': 'Error during database restore'}, status=400)
-
-                        return JsonResponse({'message': 'Connection and copy successful'}, status=200)
+                        if result.returncode != 0:
+                            return JsonResponse({'message': f'pg_dump failed: {result.stderr}'}, status=400)
 
                     DatabaseConnection.objects.create(
                             database_type=db_type,
@@ -125,11 +232,16 @@ def get_columns(request):
                             WHERE table_name = '{table_name}'
                         """)
                         columns = cursor.fetchall()
+
+                        d = Dataset(last_connection.user, last_connection.password, "hackathon",  last_connection.url, last_connection.port, table_name)
+                        m = Model("model", d)
+
+
                         columns_info.append({
                             "tableName": table_name,
                             "columns": [{
                                 "name": column[0],
-                                "mask": False
+                                "mask": m.get_predictions([column[0]])[column[0]]
                             } for column in columns
                             ]
                         })
@@ -147,7 +259,6 @@ def get_columns(request):
             return JsonResponse({'message': 'No connection data found'}, status=404)
 
     return JsonResponse({'message': 'Invalid request method'}, status=405)
-
 @csrf_exempt
 def update_columns(request):
     if request.method == 'PUT':
