@@ -1,3 +1,9 @@
+export interface ApiResponse<T> {
+    status: number;
+    errorMessage?: string;
+    data?: T;
+}
+
 export type DatabaseAuthData = {
     databaseType: "postgresql";
     url: string;
