@@ -5,7 +5,7 @@ import { SqlTableScanResult } from "../../API/types";
 import { getScanResults } from "../../API/API";
 
 export default function DatabaseInspectorPage() {
-    const [sqlTables, setSqlTables] = useState<SqlTableScanResult>()
+    const [sqlTables, setSqlTables] = useState<SqlTableScanResult | undefined>()
     
     useEffect(() => {
         getScanResults()
@@ -16,6 +16,8 @@ export default function DatabaseInspectorPage() {
     return (
         <>
             <div className="database-inspector-page-container">
+                <h1>Результат сканирования</h1>
+                <p>Найдено {sqlTables?.tables.length || 0} таблиц</p>
                 <div className="scan-results">
                     { sqlTables?.tables?.map(sqlTable => 
                         <SqlTable 

@@ -1,58 +1,67 @@
 .connection-setup-container {
-    padding: 20px 50px 50px 50px;
-  
-    border: solid 2px #adb5bd;
-    border-radius: 15px;
-  
-    h1 {
-      margin-top: 0px;
-      line-height: 2rem;
+  padding: 20px 50px 50px 50px;
 
-      .datbase-name {
-        font-size: 0.5em;
-      }
+  border: solid 2px #adb5bd;
+  border-radius: 15px;
+
+  h1 {
+    margin-top: 0px;
+    line-height: 2rem;
+
+    .datbase-name {
+      font-size: 0.5em;
     }
   }
-  
-  .form-continer {
+}
+
+.form-continer {
+  display: flex;
+  gap: 10px;
+
+  label {
     display: flex;
     gap: 10px;
-  
-    label {
-      display: flex;
-      gap: 10px;
-      width: 100%;
-  
-      span {
-        flex: 1;
-        text-align: left;
-      }
-  
-      input {
-        flex: 1;
-      }
+    width: 100%;
+
+    span {
+      flex: 1;
+      text-align: left;
     }
 
-    #copyLabel {
-      span { flex: none; }
-      input { flex: none; }
+    input {
+      flex: 1;
     }
   }
-  
-  .database-connection-form {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+
+  #copyLabel {
+    span {
+      flex: none;
+    }
+
+    input {
+      flex: none;
+    }
   }
-  
-  .user-input-container {
-    display: flex;
-    gap: 20px;
-  }
-  
-  .database-select-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
+}
+
+.database-connection-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.user-input-container {
+  display: flex;
+  gap: 20px;
+}
+
+.database-select-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.error-container {
+  color: #ef562c;
+}

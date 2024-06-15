@@ -1,18 +1,24 @@
 import axios from "axios";
 
 import { 
+    ApiResponse,
     DatabaseAuthData, 
-    SqlTableScanResult 
+    SqlTableScanResult
 } from "./types";
 
 import { API_URL } from "./constants";
 
 axios.defaults.baseURL = API_URL;
 
-export async function connectToDatabase(data: DatabaseAuthData): Promise<number> {
-    console.log(axios.defaults.baseURL)
+export async function connectToDatabase(data: DatabaseAuthData): Promise<ApiResponse<void>> {
     const response = await axios.post('connect/', data);
-    return response.status;
+    const status = response.status;
+
+    if (status === 200) {
+        return {status: 200}
+    }
+    
+    return {status: status, errorMessage: response.data.message};
 }
 
 export async function getScanResults(): Promise<SqlTableScanResult | undefined> {
@@ -26,8 +32,13 @@ export async function getScanResults(): Promise<SqlTableScanResult | undefined> 
     }
 }
 
-export async function updateScanResult(sqlTableScanResult: SqlTableScanResult): Promise<number> {
+export async function updateScanResult(sqlTableScanResult: SqlTableScanResult): Promise<ApiResponse<void>> {
     const response = await axios.put('updateScanResult', sqlTableScanResult);
+    const status = response.status;
 
-    return response.status;
+    if (status === 200) {
+        return {status: 200}
+    }
+    
+    return {status: status, errorMessage: response.data.message};
 }

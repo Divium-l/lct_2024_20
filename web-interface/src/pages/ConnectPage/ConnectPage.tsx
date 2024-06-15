@@ -2,10 +2,11 @@ import { useNavigate } from "react-router-dom";
 
 import "./ConnectPage.scss";
 import { connectToDatabase } from "../../API/API.ts";
+import { useState } from "react";
 
 export default function ConnectPage() {
     const navigate = useNavigate();
-    // const [databaseType, set]
+    const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
 
     const sendForm = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -23,8 +24,17 @@ export default function ConnectPage() {
             copy: copy,
         });
 
-        if (response === 200) {
+        if (response.status === 200) {
             navigate('/database-inspector');
+        }
+        else {
+            const responseErrorMessage = response.errorMessage;
+            if (responseErrorMessage !== undefined || responseErrorMessage !== '') {
+                setErrorMessage(responseErrorMessage);
+            }
+            else {
+                setErrorMessage('Unknown error has occured');
+            }
         }
     }
 
@@ -61,6 +71,12 @@ export default function ConnectPage() {
                             <span>Коприровать БД: </span>
                             <input type="checkbox" name='copy' defaultChecked/>
                         </label>
+
+                        { errorMessage ? (
+                            <div className="error-container">
+                                { errorMessage }
+                            </div>
+                        ) : undefined }
 
                         <button type="submit">Connect</button>
                     </form>

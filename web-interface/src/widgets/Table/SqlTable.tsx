@@ -47,13 +47,14 @@ function SqlTableRow({tableName, column}: SqlTableRowProps) {
     const handleCheckboxChange = async (event: ChangeEvent<HTMLInputElement>) => {
         const checked = event.target.checked;
         
-        const status = await updateScanResult({
+        const response = await updateScanResult({
             tables: [{tableName: tableName, columns: [{name: column.name, mask: checked}]}]
         });
 
-        if (status !== 200) {
-            event.target.checked = !checked; 
-        } 
+        if (response.status !== 200) {
+            event.target.checked = !checked;
+            console.error(response.errorMessage);
+        }
     }
 
     return (
