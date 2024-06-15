@@ -9,7 +9,7 @@ class Dataset:
         self.engine = (f"postgresql://{user}:{password}@{server}:{port}/{db}")
         self.table = table
     def get_df(self, columns):
-        df = pd.read_sql(f"SELECT {",".join(columns)} FROM {self.table} LIMIT 100", self.engine)
+        df = pd.read_sql(f"SELECT {','.join(columns)} FROM {self.table} LIMIT 100", self.engine)
         return df
 
 class Model:
