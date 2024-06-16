@@ -11,7 +11,6 @@ from transformers import AutoModel
 from tqdm.notebook import tqdm
 
 from .models import DatabaseConnection
-from backend.hackaton.dbconnect.views import saved_data
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.model_selection import train_test_split
 
