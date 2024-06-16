@@ -5,14 +5,19 @@ import time
 import string
 import psycopg2
 import subprocess
+
+import redis
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from dbconnect.models import DatabaseConnection
 
 from ml.model_func import Dataset, Model
-
+from django.conf import settings
+r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 saved_data = {}
+
+
 
 def depersonalize_row(row, columns_to_mask, semantic=True):
     depersonalized_row = {}
@@ -233,8 +238,10 @@ def get_columns(request):
                         """)
                         columns = cursor.fetchall()
 
+                        model_name = r.get("current_model")
                         d = Dataset(last_connection.user, last_connection.password, "hackathon",  last_connection.url, last_connection.port, table_name)
-                        m = Model("model", d)
+                        print(str(str(settings.MODELS_PATH)+str(model_name.decode("utf-8"))))
+                        m = Model(str(str(settings.MODELS_PATH)+str(model_name.decode("utf-8"))), d)
 
 
                         columns_info.append({
@@ -251,11 +258,14 @@ def get_columns(request):
                     return JsonResponse(saved_data, status=200, safe=False)
 
                 except Exception as e:
+                    print(repr(e))
+                    print(e)
                     return JsonResponse({'message': str(e)}, status=400)
             else:
                 return JsonResponse({'message': 'Unsupported database type'}, status=400)
 
         except DatabaseConnection.DoesNotExist:
+            print("NOT FOUND")
             return JsonResponse({'message': 'No connection data found'}, status=404)
 
     return JsonResponse({'message': 'Invalid request method'}, status=405)

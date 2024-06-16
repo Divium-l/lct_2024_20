@@ -1,5 +1,6 @@
-from django.apps import AppConfig
+import threading
 
+from django.apps import AppConfig
 
 class DbconnectConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'

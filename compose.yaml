@@ -7,6 +7,31 @@ services:
 
   backend:
     build: backend/
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MODELS_PATH=/app/hackaton/ml/
     ports:
       - 8000:8000
     hostname: backend
+    depends_on:
+      - redis
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    command:
+      - /bin/sh
+      - -c
+      - |
+          nohup redis-server &
+          sleep 5
+          echo "adding some default key value"
+          redis-cli SET current_model model0
+          echo "Get docker key value"
+          redis-cli GET current_model
+          # this will keep container running
+          tail -f /dev/null
+
+
