@@ -17,9 +17,10 @@ export default function ConnectPage() {
 
         const response = await connectToDatabase({
             databaseType: "postgresql",
-            url: formData.get('url')?.toString() || '',
-            port: formData.get('port')?.toString() || '',
-            user: formData.get('user')?.toString() || '',
+            url: formData.get('url')?.toString() || 'localhost',
+            dbname: formData.get('dbname')?.toString() || 'postgres',
+            port: formData.get('port')?.toString() || '5432',
+            user: formData.get('user')?.toString() || 'postgres',
             password: formData.get('password')?.toString() || '',
             copy: copy,
         });
@@ -53,6 +54,10 @@ export default function ConnectPage() {
                         <label htmlFor="url">
                             <span>Хост: </span>
                             <input type="text" placeholder='localhost' name='url'/>
+                        </label>
+                        <label htmlFor="dbname">
+                            <span>База данных: </span>
+                            <input type="text" placeholder='postgres' name='dbname'/>
                         </label>
                         <label htmlFor="port">
                             <span>Порт: </span>

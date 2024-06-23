@@ -7,6 +7,7 @@ export interface ApiResponse<T> {
 export type DatabaseAuthData = {
     databaseType: "postgresql";
     url: string;
+    dbname: string;
     port: string;
     user: string;
     password: string;
