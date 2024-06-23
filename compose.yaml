@@ -1,4 +1,11 @@
 services:
+  cronteacher:
+    build:
+      dockerfile: ./crondocker
+    depends_on:
+      - backend
+
+
   web-ui:
     build: web-interface/
     ports:

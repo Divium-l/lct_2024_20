@@ -1,0 +1,1 @@
+* * * * * curl backend:8000/learn >> /dev/null

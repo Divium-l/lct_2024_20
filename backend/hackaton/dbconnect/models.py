@@ -12,7 +12,9 @@ class DatabaseConnection(models.Model):
     port = models.CharField(max_length=10)
     user = models.CharField(max_length=50)
     password = models.CharField(max_length=50)
+    dbname = models.CharField(max_length=100)
     copy = models.BooleanField(default=False)
+    saved_data= models.JSONField(null=True)
 
     def __str__(self):
         return f"{self.database_type} - {self.url}"

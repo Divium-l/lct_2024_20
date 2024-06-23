@@ -1,5 +1,6 @@
 import json
 import random
+import threading
 from datetime import datetime, date, time
 import time
 import string
@@ -14,8 +15,10 @@ from dbconnect.models import DatabaseConnection
 
 from ml.model_func import Dataset, Model
 from django.conf import settings
+
+from .celery_app import learn_model
+
 r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
-saved_data = {}
 
 
 
@@ -128,6 +131,7 @@ def connect_to_db(request):
             user = data.get('user')
             password = data.get('password')
             copy = data.get('copy')
+            dbname = data.get('dbname')
 
             if db_type != None and db_type.lower() == 'postgreSQL'.lower():
                 try:
@@ -135,16 +139,18 @@ def connect_to_db(request):
                         host=url,
                         port=port,
                         user=user,
-                        password=password
+                        password=password,
+                        database=dbname
                     )
                     connection.close()
                     if copy:
                         backup_file = 'db_backup.dump'
                         pg_dump_command = [
-                            'pg_dump',
+                            '/opt/homebrew/bin/pg_dump',
                             '-h', url,
                             '-p', port,
                             '-U', user,
+                            '-d', dbname,
                             '-F', 'c',
                             '-b',
                             '-v',
@@ -164,6 +170,7 @@ def connect_to_db(request):
                             port=port,
                             user=user,
                             password=password,
+                            dbname=dbname,
                             copy=copy
                     )
                     return JsonResponse({'message': 'Connection successful'}, status=200)
@@ -191,6 +198,7 @@ def use_saved_connection(request):
                 'port': last_connection.port,
                 'user': last_connection.user,
                 'password': last_connection.password,
+                'dbname':last_connection.dbname,
                 'copy': last_connection.copy
             }, status=200)
         except DatabaseConnection.DoesNotExist:
@@ -208,6 +216,7 @@ def get_columns(request):
             port = last_connection.port
             user = last_connection.user
             password = last_connection.password
+            dbname = last_connection.dbname
 
             if db_type.lower() == 'postgreSQL'.lower():
                 try:
@@ -215,7 +224,8 @@ def get_columns(request):
                         host=url,
                         port=port,
                         user=user,
-                        password=password
+                        password=password,
+                        database=dbname
                     )
                     cursor = connection.cursor()
 
@@ -239,7 +249,7 @@ def get_columns(request):
                         columns = cursor.fetchall()
 
                         model_name = r.get("current_model")
-                        d = Dataset(last_connection.user, last_connection.password, "hackathon",  last_connection.url, last_connection.port, table_name)
+                        d = Dataset(last_connection.user, last_connection.password, dbname,  last_connection.url, last_connection.port, table_name)
                         print(str(str(settings.MODELS_PATH)+str(model_name.decode("utf-8"))))
                         m = Model(str(str(settings.MODELS_PATH)+str(model_name.decode("utf-8"))), d)
 
@@ -274,7 +284,10 @@ def update_columns(request):
     if request.method == 'PUT':
         try:
             data = json.loads(request.body.decode('utf-8'))
-            global saved_data
+            last_connection = DatabaseConnection.objects.latest('id')
+            saved_data = last_connection.saved_data
+            if not saved_data:
+                saved_data = {}
 
             for new_table in data.get("tables", []):
                 table_name = new_table["tableName"]
@@ -297,7 +310,8 @@ def update_columns(request):
                         "tableName": table_name,
                         "columns": new_columns
                     })
-
+                    last_connection.saved_data = saved_data
+                    last_connection.save()
             return JsonResponse(saved_data, status=200)
         except Exception as e:
             return JsonResponse({'message': str(e)}, status=400)
@@ -308,3 +322,10 @@ def get_saved_columns(request):
     if request.method == 'GET':
         return JsonResponse(saved_data, status=200)
     return JsonResponse({'message': 'Invalid request method'}, status=405)
+
+@csrf_exempt
+def learn(request):
+    if request.method == 'GET':
+        t = threading.Thread(target=learn_model, daemon=True)
+        t.start()
+        return JsonResponse({'message': "OK"}, status=200)

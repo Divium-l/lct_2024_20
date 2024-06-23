@@ -1,0 +1,12 @@
+FROM ubuntu:24.10
+RUN apt-get update
+RUN apt-get install -y \
+    cron \
+    curl
+
+COPY cron_teacher /etc/cron.d/cron_teacher
+RUN chmod 0644 /etc/cron.d/cron_teacher
+RUN crontab /etc/cron.d/cron_teacher
+RUN touch /var/log/cron.log
+
+CMD ["cron", "&&", "tail", "-f", "/var/log/cron.log"]

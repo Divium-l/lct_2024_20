@@ -1,3 +1,4 @@
+import json
 import os
 import time
 
@@ -10,11 +11,13 @@ from catboost import CatBoostClassifier, Pool
 from transformers import AutoModel
 from tqdm.notebook import tqdm
 
-from .models import DatabaseConnection
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.model_selection import train_test_split
 
-def learn_model(saved_data):
+from .models import DatabaseConnection
+
+
+def learn_model():
     print("start learning")
     r = redis.Redis(host=os.environ.get("REDIS_HOST"), port=os.environ.get("REDIS_PORT"))
     model_name = r.get('current_model')
@@ -29,19 +32,21 @@ def learn_model(saved_data):
     )
     train_dataset["label"] = (train_dataset.type_column != "Other_data").astype(int)
 
-    last_connection = DatabaseConnection.objects.latest('id')
-    url = last_connection.url
-    port = last_connection.port
-    user = last_connection.user
-    password = last_connection.password
-    engine = (f"postgresql://{user}:{password}@{url}:{port}/hackathon")
-    features = [",".join(df[name_col].astype(str).values) for name_col in train_dataset.name_column]
-    if "tables" in  saved_data:
-        for table in saved_data["tables"]:
-            for column in saved_data["tables"]["columns"]:
-                df1 = pd.read_sql(f"SELECT {column["name"]} FROM {table["tableName"]}", engine)
-                df1["label"] = column["mask"].astype(int)
-                features.append(",".join(df1[column["name"]].astype(str).values))
+    last_connections = DatabaseConnection.objects.all()
+    for last_connection in last_connections:
+        url = last_connection.url
+        port = last_connection.port
+        user = last_connection.user
+        password = last_connection.password
+        engine = (f"postgresql://{user}:{password}@{url}:{port}/hackathon")
+        features = [",".join(df[name_col].astype(str).values) for name_col in train_dataset.name_column]
+        saved_data = last_connection.saved_data
+        if "tables" in  saved_data:
+            for table in saved_data["tables"]:
+                for column in saved_data["tables"]["columns"]:
+                    df1 = pd.read_sql(f"SELECT {column["name"]} FROM {table["tableName"]}", engine)
+                    df1["label"] = column["mask"].astype(int)
+                    features.append(",".join(df1[column["name"]].astype(str).values))
         model = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-base-code', max_length=256, trust_remote_code=True)
         list_embeddings = []
         for s in tqdm(features):

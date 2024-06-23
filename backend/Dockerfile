@@ -13,10 +13,12 @@ RUN apt-get install -y \
     postgresql-contrib-16
 
 
+
+
 RUN apt-get update
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
-
 RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
+
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -26,9 +28,8 @@ WORKDIR /app
 COPY . /app
 RUN pip install -r hackaton/requirements.txt --break-system-packages
 RUN pip install transformers --break-system-packages
-RUN python3 manage.py migrate
+RUN python3 hackaton/manage.py migrate
 
 EXPOSE 8000
 
-ENTRYPOINT [ "python3" ]
-CMD [ "hackaton/manage.py", "runserver", "0.0.0.0:8000" ]
+CMD ["python3", "hackaton/manage.py", "runserver", "0.0.0.0:8000" ]

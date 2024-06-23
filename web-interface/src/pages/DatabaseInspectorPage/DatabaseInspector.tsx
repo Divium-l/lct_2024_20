@@ -26,7 +26,7 @@ export default function DatabaseInspectorPage() {
     if (intervalRef.current !== -1) {
         intervalRef.current = setInterval(() => {
             getScanResults().then(result => {setSqlTables(result)});
-        }, 5000);
+        }, 30000);
     }
 
     return (
