@@ -16,7 +16,7 @@ from dbconnect.models import DatabaseConnection
 from ml.model_func import Dataset, Model
 from django.conf import settings
 
-from .celery_app import learn_model
+from .model_learn import learn_model
 
 r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
