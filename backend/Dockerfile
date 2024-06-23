@@ -26,6 +26,7 @@ WORKDIR /app
 COPY . /app
 RUN pip install -r hackaton/requirements.txt --break-system-packages
 RUN pip install transformers --break-system-packages
+RUN python3 manage.py migrate
 
 EXPOSE 8000
 
